@@ -302,6 +302,13 @@ class BuilderSubscriber extends CommonSubscriber
             $email = $this->emailModel->getEntity($emailId);
         }
 
+        // This is workaround for defect https://github.com/mautic/mautic/issues/7133
+        // Do not add tracking if email has 'surveymonkey' link
+        // This allows tracking control per email instead of global switch
+        if (preg_match('/surveymonkey/', $event->getPlainText())) {
+            return;
+        }
+
         $utmTags      = $email->getUtmTags();
         $clickthrough = $event->generateClickthrough();
         $trackables   = $this->parseContentForUrls($event, $emailId);

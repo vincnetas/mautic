@@ -87,6 +87,21 @@ EOT
 
             $spoolPath = $container->getParameter('mautic.mailer_spool_path');
             if (file_exists($spoolPath)) {
+
+                // Workaround for  https://github.com/mautic/mautic/issues/6339
+                // Remove all 'list-unsubscribe' headers from spooled files 
+                $finder = Finder::create()->in($spoolPath)->name('*.{message}');
+                foreach ($finder as $file) {
+                    $file = $file->getRealPath();
+
+                    $message = unserialize(file_get_contents($file));
+                    if ($message->getHeaders()->has('list-unsubscribe')) {
+                        $message->getHeaders()->removeAll('list-unsubscribe');
+                        file_put_contents($file, serialize($message));
+                    }
+                }
+		// end workaround
+
                 $finder = Finder::create()->in($spoolPath)->name('*.{finalretry,sending,tryagain}');
 
                 foreach ($finder as $failedFile) {
@@ -105,7 +120,7 @@ EOT
 
                     $message = unserialize(file_get_contents($tmpFilename));
                     if ($message !== false && is_object($message) && get_class($message) === 'Swift_Message') {
-                        $tryAgain = false;
+			$tryAgain = false;
                         if ($dispatcher->hasListeners(EmailEvents::EMAIL_RESEND)) {
                             $event = new QueueEmailEvent($message);
                             $dispatcher->dispatch(EmailEvents::EMAIL_RESEND, $event);
@@ -113,7 +128,7 @@ EOT
                         }
 
                         try {
-                            $transport->send($message);
+  	                    $transport->send($message);
                         } catch (\Swift_TransportException $e) {
                             if ($dispatcher->hasListeners(EmailEvents::EMAIL_FAILED)) {
                                 $event = new QueueEmailEvent($message);
