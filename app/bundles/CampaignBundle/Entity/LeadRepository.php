@@ -211,7 +211,12 @@ class LeadRepository extends CommonRepository
         $q = $this->getSlaveConnection($limiter)->createQueryBuilder();
         $q->select('l.lead_id, l.date_added')
             ->from(MAUTIC_TABLE_PREFIX.'campaign_leads', 'l')
-            ->where($q->expr()->eq('l.campaign_id', ':campaignId'))
+            ->where(
+                $q->expr()->andX(
+                    $q->expr()->eq('l.campaign_id', ':campaignId'),
+                    $q->expr()->eq('l.manually_removed', 0)
+                )
+            )
             // Order by ID so we can query by greater than X contact ID when batching
             ->orderBy('l.lead_id')
             ->setMaxResults($limiter->getBatchLimit())
@@ -291,7 +296,12 @@ class LeadRepository extends CommonRepository
             $q = $this->getSlaveConnection()->createQueryBuilder();
             $q->select('count(*)')
                 ->from(MAUTIC_TABLE_PREFIX.'campaign_leads', 'l')
-                ->where($q->expr()->eq('l.campaign_id', ':campaignId'))
+                ->where(
+                    $q->expr()->andX(
+                        $q->expr()->eq('l.campaign_id', ':campaignId'),
+                        $q->expr()->eq('l.manually_removed', 0)
+                    )
+                )
                 // Order by ID so we can query by greater than X contact ID when batching
                 ->orderBy('l.lead_id')
                 ->setParameter('campaignId', (int) $campaignId);
@@ -506,7 +516,7 @@ class LeadRepository extends CommonRepository
                 )
             );
 
-        $this->updateQueryFromContactLimiter('cl', $qb, $limiter, true);
+        $this->updateQueryFromContactLimiter('cl', $qb, $limiter, false);
         $this->updateQueryWithSegmentMembershipExclusion($segments, $qb);
 
         $results = $qb->execute()->fetchAll();
