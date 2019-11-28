@@ -264,6 +264,10 @@ class MailHelper
         $this->mailer    = $mailer;
         $this->transport = $mailer->getTransport();
 
+        $mailer = array_rand($this->factory->getParameter('swiftmailer.mailers'));
+        $spool = new \Swift_FileSpool((dirname(dirname(dirname(__DIR__))).'/spool/'.$mailer));
+        $this->transport->setSpool($spool);
+
         try {
             $this->logger = new \Swift_Plugins_Loggers_ArrayLogger();
             $this->mailer->registerPlugin(new \Swift_Plugins_LoggerPlugin($this->logger));
