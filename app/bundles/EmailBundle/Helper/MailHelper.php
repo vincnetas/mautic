@@ -442,7 +442,7 @@ class MailHelper
                     $this->transportStartTime = time();
                 }
 
-                if (!$this->mailer_spool and is_array($this->factory->getParameter('swiftmailer.mailers'))) { //change only one time
+                if (!$this->mailer_spool and method_exists($this->transport, 'setSpool') and is_array($this->factory->getParameter('swiftmailer.mailers'))) { //change only one time
                     $this->mailer_spool = array_rand($this->factory->getParameter('swiftmailer.mailers'));
                     $spool = new \Swift_FileSpool((dirname(dirname(dirname(__DIR__))).'/spool/'.$this->mailer_spool));
                     $this->transport->setSpool($spool);
