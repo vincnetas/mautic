@@ -23,9 +23,9 @@ use Symfony\Component\Finder\Finder;
 /**
  * CLI command to process the e-mail queue.
  */
-class ProcessEmailQueueCommand extends ModeratedCommand
+class ProcessEmailQueueSecondCommand extends ModeratedCommand
 {
-    var $mailer_name='default';
+    var $mailer_name='second_mailer';
 
     /**
      * {@inheritdoc}
@@ -33,7 +33,7 @@ class ProcessEmailQueueCommand extends ModeratedCommand
     protected function configure()
     {
         $this
-            ->setName('mautic:emails:send')
+            ->setName('mautic:emails:send_second')
             ->setDescription('Processes SwiftMail\'s mail queue')
             ->addOption('--message-limit', null, InputOption::VALUE_OPTIONAL, 'Limit number of messages sent at a time. Defaults to value set in config.')
             ->addOption('--time-limit', null, InputOption::VALUE_OPTIONAL, 'Limit the number of seconds per batch. Defaults to value set in config.')
@@ -45,7 +45,7 @@ The <info>%command.name%</info> command is used to process the application's e-m
 
 <info>php %command.full_name%</info>
 EOT
-        );
+            );
 
         parent::configure();
     }
@@ -59,11 +59,10 @@ EOT
         $env        = (!empty($options['env'])) ? $options['env'] : 'dev';
         $container  = $this->getContainer();
         $dispatcher = $container->get('event_dispatcher');
-
-        $skipClear = $input->getOption('do-not-clear');
-        $quiet     = $input->getOption('quiet');
-        $timeout   = $input->getOption('clear-timeout');
-        $queueMode = $container->get('mautic.helper.core_parameters')->getParameter('mailer_spool_type');
+        $skipClear  = $input->getOption('do-not-clear');
+        $quiet      = $input->hasOption('quiet') ? $input->getOption('quiet') : false;
+        $timeout    = $input->getOption('clear-timeout');
+        $queueMode  = $container->get('mautic.helper.core_parameters')->getParameter('mailer_spool_type');
 
         if ($queueMode != 'file') {
             $output->writeln('Mautic is not set to queue email.');
@@ -87,11 +86,11 @@ EOT
                 $transport->start();
             }
 
-            $spoolPath = $container->getParameter('mautic.mailer_spool_path').'/'.$this->mailer_name;;
+            $spoolPath = $container->getParameter('mautic.mailer_spool_path').'/'.$this->mailer_name;
             if (file_exists($spoolPath)) {
 
                 // Workaround for  https://github.com/mautic/mautic/issues/6339
-                // Remove all 'list-unsubscribe' headers from spooled files 
+                // Remove all 'list-unsubscribe' headers from spooled files
                 $finder = Finder::create()->in($spoolPath)->name('*.{message}');
                 foreach ($finder as $file) {
                     $file = $file->getRealPath();
@@ -102,7 +101,7 @@ EOT
                         file_put_contents($file, serialize($message));
                     }
                 }
-		// end workaround
+                // end workaround
 
                 $finder = Finder::create()->in($spoolPath)->name('*.{finalretry,sending,tryagain}');
 
@@ -122,7 +121,7 @@ EOT
 
                     $message = unserialize(file_get_contents($tmpFilename));
                     if ($message !== false && is_object($message) && get_class($message) === 'Swift_Message') {
-			$tryAgain = false;
+                        $tryAgain = false;
                         if ($dispatcher->hasListeners(EmailEvents::EMAIL_RESEND)) {
                             $event = new QueueEmailEvent($message);
                             $dispatcher->dispatch(EmailEvents::EMAIL_RESEND, $event);
@@ -130,7 +129,7 @@ EOT
                         }
 
                         try {
-  	                    $transport->send($message);
+                            $transport->send($message);
                         } catch (\Swift_TransportException $e) {
                             if ($dispatcher->hasListeners(EmailEvents::EMAIL_FAILED)) {
                                 $event = new QueueEmailEvent($message);

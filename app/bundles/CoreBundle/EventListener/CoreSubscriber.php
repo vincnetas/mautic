@@ -235,7 +235,7 @@ class CoreSubscriber extends CommonSubscriber
                     $this->userModel->getRepository()->setLastActive($user);
                 }
 
-                $session = $request->getSession();
+                /*$session = $request->getSession();
 
                 if ($session) {
                     $delay = new \DateTime();
@@ -249,7 +249,7 @@ class CoreSubscriber extends CommonSubscriber
                     }
 
                     define('MAUTIC_ACTIVITY_CHECKED', 1);
-                }
+                }*/
             }
         }
     }

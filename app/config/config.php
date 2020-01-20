@@ -250,23 +250,30 @@ $container->loadFromExtension('doctrine_migrations', [
 
 // Swiftmailer Configuration
 $mailerSettings = [
-    'transport'  => '%mautic.mailer_transport%',
-    'host'       => '%mautic.mailer_host%',
-    'port'       => '%mautic.mailer_port%',
-    'username'   => '%mautic.mailer_user%',
-    'password'   => '%mautic.mailer_password%',
-    'encryption' => '%mautic.mailer_encryption%',
-    'auth_mode'  => '%mautic.mailer_auth_mode%',
+    'default_mailer' => 'default',
+    'mailers' => [
+        'default'=> [
+            'transport'  => '%mautic.mailer_transport%',
+            'host'       => '%mautic.mailer_host%',
+            'port'       => '%mautic.mailer_port%',
+            'username'   => '%mautic.mailer_user%',
+            'password'   => '%mautic.mailer_password%',
+            'encryption' => '%mautic.mailer_encryption%',
+            'auth_mode'  => '%mautic.mailer_auth_mode%',
+        ]
+    ]
 ];
 
 // Only spool if using file as otherwise emails are not sent on redirects
 $spoolType = $container->getParameter('mautic.mailer_spool_type');
 if ($spoolType == 'file') {
-    $mailerSettings['spool'] = [
+    $mailerSettings['mailers']['default']['spool'] = [
         'type' => '%mautic.mailer_spool_type%',
         'path' => '%mautic.mailer_spool_path%',
     ];
 }
+$mailerSettings['mailers']['second_mailer'] = $mailerSettings['mailers']['default'];
+$mailerSettings['mailers']['third_mailer'] = $mailerSettings['mailers']['default'];
 $container->loadFromExtension('swiftmailer', $mailerSettings);
 
 //KnpMenu Configuration

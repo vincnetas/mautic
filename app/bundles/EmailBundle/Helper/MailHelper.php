@@ -254,6 +254,11 @@ class MailHelper
     private $copies = [];
 
     /**
+     * @var string
+     */
+    private $mailer_spool;
+
+    /**
      * @param MauticFactory $factory
      * @param               $mailer
      * @param null          $from
@@ -435,6 +440,12 @@ class MailHelper
             try {
                 if (!$this->transport->isStarted()) {
                     $this->transportStartTime = time();
+                }
+
+                if (!$this->mailer_spool and method_exists($this->transport, 'setSpool') and is_array($this->factory->getParameter('swiftmailer.mailers'))) { //change only one time
+                    $this->mailer_spool = array_rand($this->factory->getParameter('swiftmailer.mailers'));
+                    $spool = new \Swift_FileSpool((dirname(dirname(dirname(__DIR__))).'/spool/'.$this->mailer_spool));
+                    $this->transport->setSpool($spool);
                 }
 
                 $this->mailer->send($this->message, $failures);
