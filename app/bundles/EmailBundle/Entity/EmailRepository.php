@@ -199,7 +199,7 @@ class EmailRepository extends CommonRepository
     ) {
         // Do not include leads in the do not contact table
         $dncQb = $this->getEntityManager()->getConnection()->createQueryBuilder();
-        $dncQb->select('null')
+        $dncQb->select('lead_id')
             ->from(MAUTIC_TABLE_PREFIX.'lead_donotcontact', 'dnc')
             ->where(
                 $dncQb->expr()->andX(
@@ -210,7 +210,7 @@ class EmailRepository extends CommonRepository
 
         // Do not include contacts where the message is pending in the message queue
         $mqQb = $this->getEntityManager()->getConnection()->createQueryBuilder();
-        $mqQb->select('null')
+        $mqQb->select('lead_id')
             ->from(MAUTIC_TABLE_PREFIX.'message_queue', 'mq')
             ->where(
                 $mqQb->expr()->andX(
@@ -222,7 +222,7 @@ class EmailRepository extends CommonRepository
 
         // Do not include leads that have already been emailed
         $statQb = $this->getEntityManager()->getConnection()->createQueryBuilder();
-        $statQb->select('null')
+        $statQb->select('lead_id')
             ->from(MAUTIC_TABLE_PREFIX.'email_stats', 'stat')
             ->where(
                 $statQb->expr()->eq('stat.lead_id', 'l.id')
@@ -264,7 +264,7 @@ class EmailRepository extends CommonRepository
 
         // Only include those in associated segments
         $segmentQb = $this->getEntityManager()->getConnection()->createQueryBuilder();
-        $segmentQb->select('null')
+        $segmentQb->select('lead_id')
             ->from(MAUTIC_TABLE_PREFIX.'lead_lists_leads', 'll')
             ->where(
                 $segmentQb->expr()->andX(
@@ -286,10 +286,10 @@ class EmailRepository extends CommonRepository
         }
 
         $q->from(MAUTIC_TABLE_PREFIX.'leads', 'l')
-            ->andWhere(sprintf('EXISTS (%s)', $segmentQb->getSQL()))
-            ->andWhere(sprintf('NOT EXISTS (%s)', $dncQb->getSQL()))
-            ->andWhere(sprintf('NOT EXISTS (%s)', $statQb->getSQL()))
-            ->andWhere(sprintf('NOT EXISTS (%s)', $mqQb->getSQL()))
+            ->andWhere(sprintf('l.id IN (%s)', $segmentQb->getSQL()))
+            ->andWhere(sprintf('l.id NOT IN (%s)', $dncQb->getSQL()))
+            ->andWhere(sprintf('l.id NOT IN (%s)', $statQb->getSQL()))
+            ->andWhere(sprintf('l.id NOT IN (%s)', $mqQb->getSQL()))
             ->setParameter('false', false, 'boolean');
 
         $q = $this->setMinMaxIds($q, 'l.id', $minContactId, $maxContactId);
